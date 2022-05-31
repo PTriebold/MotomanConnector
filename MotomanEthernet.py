@@ -10,12 +10,12 @@ import socket, time
 
 
 #MH24 Conversion Values
-#S 1341,4 Pulse pro °
-#L 1341,4 Pulse pro °
-#U 1341,4 Pulse pro °
-#R 90° 90000 -> 1000 Pulse pro °
-#B 90° 90000 -> 1000 Pulse pro °
-#T 90° 56462 -> 622 Pulse pro °
+#S 1341,4 Pulse per °
+#L 1341,4 Pulse per °
+#U 1341,4 Pulse per °
+#R 90° 90000 -> 1000 Pulse per °
+#B 90° 90000 -> 1000 Pulse per °
+#T 90° 56462 -> 622 Pulse per °
 
 class MotomanConnector:
     def __init__(self,IP = "192.168.255.1", PORT=80, S_pulse = 1341.4, L_pulse = 1341.4, U_pulse = 1341.4, R_pulse = 1000, B_pulse = 1000, T_pulse = 622):
@@ -90,12 +90,12 @@ class MotomanConnector:
             print("Connection Faulty!")
             raise Exception("Yaskawa Connection Error!")
 
-    def disconnectMH(self): #Verbindung Trennen
+    def disconnectMH(self): #Disconnect
         """Disconnect from the Controller
         """
         self.s.close()
 
-    def getJointAnglesMH(self): #Encoderpulse ausrechnen und als Winkel umgerechnet ausgeben
+    def getJointAnglesMH(self): #Read Encoder pulses and convert them to Joint Angles
         """Read the Joint Angles
 
         Returns:
@@ -108,7 +108,7 @@ class MotomanConnector:
         data2_arr = [int(data2_str[0])/self.S_pulse,int(data2_str[1])/self.L_pulse,int(data2_str[2])/self.U_pulse,int(data2_str[3])/self.R_pulse,int(data2_str[4])/self.B_pulse,int(data2_str[5])/self.T_pulse]
         return data2_arr
 
-    def getCoordinatesMH(self,coordinateSystem = 0): #Der Controller ist irgendwie nicht in der lage die koordinaten zu
+    def getCoordinatesMH(self,coordinateSystem = 0): #Somehow our controller raises an internal error
         """Read the current Position in reference to a selectable coordinate system, currently Broken on DX Controllers!
 
         Args:
@@ -120,7 +120,7 @@ class MotomanConnector:
         d1, d2 = self.__sendCMD("RPOSC","0,0\r")
         return d2.decode("utf-8").replace("\r","").split(",")
 
-    def servoMH(self, state = True): #Servo an/aus-schalten
+    def servoMH(self, state = True): #Enable/Disable Servos
         """Turn on/off the Servo motors
 
         Args:
@@ -142,7 +142,7 @@ class MotomanConnector:
             B (float): B angle
             T (float): T angle
         """
-        cmd = f"{speed},{int(S*1341.4)},{int(L*1341.4)},{int(U*1341.4)},{int(R*1000)},{int(B*1000)},{int(T*622)},0,0,0,0,0,0,0\r" #die gegebenen Winkel in Encoderpulse umrechnen
+        cmd = f"{speed},{int(S*1341.4)},{int(L*1341.4)},{int(U*1341.4)},{int(R*1000)},{int(B*1000)},{int(T*622)},0,0,0,0,0,0,0\r" #Convert encoder pulses
         self.__sendCMD("PMOVJ",cmd)
 
 
@@ -158,7 +158,7 @@ class MotomanConnector:
             Exception: Exception if the type is not allowed
         """
         cmd = f"{type},{number},{value}\r"
-        if type in [0,1,2,3,7]: self.__sendCMD("LOADV",cmd) #Überprüfen ob der variablentyp in den "einfach"-schreibbaren ist
+        if type in [0,1,2,3,7]: self.__sendCMD("LOADV",cmd) #Check if Variable Type is allowed
         else: raise Exception("Variable Type not supported!")
 
     def ReadVariableMH(self,type,number):
@@ -205,11 +205,3 @@ class MotomanConnector:
         """
         d1,d2 = self.__sendCMD("START",f"{job}\r")
         return d1, d2
-
-if __name__ == "__main__":
-    mh = MotomanConnector(IP="192.168.178.10")
-    mh.connectMH()
-
-    # # # #MH24 Commandos hier
-
-    mh.disconnectMH()
